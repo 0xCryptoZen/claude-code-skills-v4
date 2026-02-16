@@ -188,75 +188,85 @@ claude --debug "!statsig,!file"
 
 ## 进阶：使用 tmux 运行 Claude Code
 
-### 工作流程
+### Ralph 工作流（推荐）
 
-1. 创建 tmux 会话运行 Claude Code
-2. 执行任务
-3. 保留 10 分钟后删除
-
-### tmux 会话管理
+参考 [Ralph for Claude Code](https://github.com/frankbria/ralph-claude-code) 项目：
 
 ```bash
-# 创建新会话并运行 Claude Code
-tmux new -s claude-$RANDOM -d "claude -p '你的任务描述'"
+# 安装 Ralph
+curl -fsSL https://raw.githubusercontent.com/frankbria/ralph-claude-code/main/install.sh | bash
 
-# 或者交互式模式
-tmux new -s claude-$RANDOM -d "claude"
+# 在项目中启用
+cd your-project
+ralph-enable
 
-# 查看会话列表
-tmux ls
-
-# 附加到会话
-tmux attach -t session_name
-
-# 10分钟后删除会话
-sleep 600 && tmux kill-session -t session_name
-
-# 后台删除（不等待）
-tmux kill-session -t session_name 2>/dev/null
+# 运行自动开发循环
+ralph "你的任务描述"
 ```
 
-### 在 OpenClaw 中的使用
+### 核心功能
 
-通过 exec 工具执行：
+1. **智能退出检测** - 检测完成指标 + EXIT_SIGNAL
+2. **tmux 集成** - 实时监控会话
+3. **速率限制** - 防止 API 过度使用
+4. **会话连续性** - 使用 --resume 保持上下文
+
+---
+
+### 手动 tmux 工作流
+
+如果不用 Ralph，可以手动创建：
 
 ```bash
 # 1. 创建 tmux 会话运行 Claude Code
 SESSION_NAME="claude-$(date +%s)"
 tmux new -d -s "$SESSION_NAME" "claude -p '你的任务'"
 
-# 等待执行完成
-sleep 30
-
-# 查看输出
-tmux capture-pane -t "$SESSION_NAME" -p
-
-# 10分钟后删除
-(sleep 600; tmux kill-session -t "$SESSION_NAME" 2>/dev/null) &
-```
-
-### 示例：自动完成任务流程
-
-```bash
-# 创建会话并运行
-tmux new -d -s "claude-task-$$" "claude -p '继续完成 researchflow 项目下一个故事'"
-
-# 等待执行
+# 2. 等待执行
 sleep 60
 
-# 查看结果
-tmux capture-pane -t "claude-task-$$" -p | tail -50
+# 3. 查看输出
+tmux capture-pane -t "$SESSION_NAME" -p | tail -50
 
-# 设置10分钟后删除
-sleep 600 && tmux kill-session -t "claude-task-$$" 2>/dev/null &
+# 4. 10分钟后删除
+(sleep 600; tmux kill-session -t "$SESSION_NAME") &
+```
+
+### 交互式模式
+
+```bash
+# 创建交互式会话
+tmux new -d -s claude-interact "claude"
+
+# 附加查看
+tmux attach -t claude-interact
+
+# 发送命令到会话
+tmux send-keys -t claude-interact "你的任务" Enter
+
+# 捕获输出
+tmux capture-pane -t claude-interact -p
+```
+
+### 检测任务完成
+
+Ralph 使用双重条件退出：
+1. **完成指标** - 如 `✅`, `完成2. **EXIT`, `completed`
+_SIGNAL** - Claude 明确输出 `EXIT_SIGNAL: true`
+
+```bash
+# 检查输出是否包含完成信号
+if echo "$output" | grep -q "EXIT_SIGNAL: true"; then
+    echo "任务完成"
+fi
 ```
 
 ### 注意事项
 
-- tmux 会话名称要唯一，避免冲突
-- 交互式模式需要手动 detach
+- tmux 会话名称要唯一
 - 打印模式 (-p) 更适合自动化
-- 10分钟保留期便于调试查看
+- 使用 --resume 保持会话上下文
+- 10分钟保留期便于调试
 
 ---
 
