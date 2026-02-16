@@ -314,3 +314,49 @@ node demo-control.js
 - 初始版本
 - 基础命令和工作流
 - Plan Mode
+
+---
+
+## Ralph 自动化循环
+
+Ralph 实现自动化的 Claude Code 开发循环。
+
+### 核心功能
+
+1. **自动开发循环** - 持续执行直到完成
+2. **智能退出检测** - 双重条件：完成指标 + EXIT_SIGNAL
+3. **速率限制** - 防止 API 过度使用
+4. **断路器** - 防止无限循环
+
+### 使用方法
+
+```javascript
+const { RalphLoop } = require('./dist/ralph-loop');
+
+const loop = new RalphLoop({
+  maxIterations: 50,
+  completionIndicators: ['✅', '完成', 'DONE'],
+  exitSignals: ['EXIT_SIGNAL: true', 'STATUS: COMPLETE'],
+  rateLimit: 100,
+  circuitBreakerThreshold: 5
+});
+
+await loop.run('创建 Hello World 程序');
+```
+
+### 退出条件
+
+- 需要同时满足：
+  1. 完成指标出现
+  2. EXIT_SIGNAL: true 出现
+
+### 断路器
+
+连续 5 次检测到完成指标时强制退出，防止无限循环。
+
+### Claude Adapter 集成
+
+```bash
+cd claude-adapter
+node ralph-demo.js
+```
