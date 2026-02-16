@@ -1,0 +1,8 @@
+{
+  "name": "claude-code",
+  "version": "1.0.0",
+  "description": "Claude Code CLI 完整使用指南 - 持续迭代中",
+  "author": "0xCryptoZen",
+  "tags": ["claude", "code", "cli", "development", "ai", "coding"],
+  "triggers": ["claude code", "claude cli", "code assistant"]
+}
