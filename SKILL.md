@@ -186,6 +186,80 @@ claude --debug "!statsig,!file"
 
 ---
 
+## 进阶：使用 tmux 运行 Claude Code
+
+### 工作流程
+
+1. 创建 tmux 会话运行 Claude Code
+2. 执行任务
+3. 保留 10 分钟后删除
+
+### tmux 会话管理
+
+```bash
+# 创建新会话并运行 Claude Code
+tmux new -s claude-$RANDOM -d "claude -p '你的任务描述'"
+
+# 或者交互式模式
+tmux new -s claude-$RANDOM -d "claude"
+
+# 查看会话列表
+tmux ls
+
+# 附加到会话
+tmux attach -t session_name
+
+# 10分钟后删除会话
+sleep 600 && tmux kill-session -t session_name
+
+# 后台删除（不等待）
+tmux kill-session -t session_name 2>/dev/null
+```
+
+### 在 OpenClaw 中的使用
+
+通过 exec 工具执行：
+
+```bash
+# 1. 创建 tmux 会话运行 Claude Code
+SESSION_NAME="claude-$(date +%s)"
+tmux new -d -s "$SESSION_NAME" "claude -p '你的任务'"
+
+# 等待执行完成
+sleep 30
+
+# 查看输出
+tmux capture-pane -t "$SESSION_NAME" -p
+
+# 10分钟后删除
+(sleep 600; tmux kill-session -t "$SESSION_NAME" 2>/dev/null) &
+```
+
+### 示例：自动完成任务流程
+
+```bash
+# 创建会话并运行
+tmux new -d -s "claude-task-$$" "claude -p '继续完成 researchflow 项目下一个故事'"
+
+# 等待执行
+sleep 60
+
+# 查看结果
+tmux capture-pane -t "claude-task-$$" -p | tail -50
+
+# 设置10分钟后删除
+sleep 600 && tmux kill-session -t "claude-task-$$" 2>/dev/null &
+```
+
+### 注意事项
+
+- tmux 会话名称要唯一，避免冲突
+- 交互式模式需要手动 detach
+- 打印模式 (-p) 更适合自动化
+- 10分钟保留期便于调试查看
+
+---
+
 ## 贡献
 
 欢迎提交 PR 来添加更多 Claude Code CLI 使用技巧！
